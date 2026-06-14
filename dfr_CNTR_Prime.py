@@ -6,19 +6,34 @@ from proba_util import *
 from dfr_CNTR import build_rounding_law_epsilon
 
 
-def covariance_matrix(n):
+# def covariance_matrix(n):
+#     M = np.zeros((n,n))
+#     for i in range(n):
+#         for j in range(n):
+#             M[i,j]=0
+#     for i in range(n):
+#         if i==0:
+#             M[i,i]=n
+#         else:
+#             M[i,i]=(2*n-i)
+#     for i in range(n-1):
+#         M[i,i+1]= (n-i-1)
+#         M[i+1,i]= (n-i-1)
+#     return M
+
+def covariance_matrix(n,mul,add):
     M = np.zeros((n,n))
     for i in range(n):
         for j in range(n):
             M[i,j]=0
     for i in range(n):
         if i==0:
-            M[i,i]=n
+            M[i,i]=n*mul + add
         else:
-            M[i,i]=(2*n-i)
+            M[i,i]=(2*n-i)*mul + add
     for i in range(n-1):
-        M[i,i+1]= (n-i-1)
-        M[i+1,i]= (n-i-1)
+        M[i,i+1]= (n-i-1)*mul
+        M[i+1,i]= (n-i-1)*mul
     return M
 
 def Satterthwaite_approximation(lst,B):
@@ -63,13 +78,13 @@ def dfr_CNTR_prime_noalg_naive(n,lm,q,eta1,eta2,q2):
     sigma_1 = eta1/2
     sigma_2 = eta2/2
     s1 =  sigma_1 * sigma_2 +  (2*q/q2)**2*sigma_epsilon*sigma_1
-    Mat = covariance_matrix(n)
-    bound = 0.5*q - sqrt(2)*q/q2
+    Mat = covariance_matrix(n, s1, (q/q2)**2*sigma_epsilon)
+    bound = 0.5*q
 
     pr = 0
     for i in range(0,int(lm/4)):
         V_diag = np.diag(Mat)[(8*i):(8*i+8)]
-        pr += chi2.sf( (bound)**2 / max(V_diag) / s1, 8 )
+        pr += chi2.sf( (bound)**2 / max(V_diag), 8 )
         # pr += chi2.sf( (bound)**2 / min(V_diag) / s1, 8 )
     return log2(pr)
 
@@ -78,13 +93,13 @@ def dfr_CNTR_prime_noalg_Satterthwaite(n,lm,q,eta1,eta2,q2):
     sigma_1 = eta1/2
     sigma_2 = eta2/2
     s1 =  sigma_1 * sigma_2 +  (2*q/q2)**2*sigma_epsilon*sigma_1
-    Mat = covariance_matrix(n)
-    bound = 0.5*q - sqrt(2)*q/q2
+    Mat = covariance_matrix(n, s1, (q/q2)**2*sigma_epsilon)
+    bound = 0.5*q
 
     pr = 0
     for i in range(0,int(lm/4)):
         V_diag = np.diag(Mat)[(8*i):(8*i+8)]
-        pr += Satterthwaite_approximation(V_diag, (bound)**2 / s1)
+        pr += Satterthwaite_approximation(V_diag, (bound)**2)
     return log2(pr)
 
 def dfr_CNTR_prime_noalg_Saddlepoint(n,lm,q,eta1,eta2,q2):
@@ -92,13 +107,13 @@ def dfr_CNTR_prime_noalg_Saddlepoint(n,lm,q,eta1,eta2,q2):
     sigma_1 = eta1/2
     sigma_2 = eta2/2
     s1 =  sigma_1 * sigma_2 +  (2*q/q2)**2*sigma_epsilon*sigma_1
-    Mat = covariance_matrix(n)
-    bound = 0.5*q - sqrt(2)*q/q2
+    Mat = covariance_matrix(n, s1, (q/q2)**2*sigma_epsilon)
+    bound = 0.5*q
 
     pr = 0
     for i in range(0,int(lm/4)):
         V_diag = np.diag(Mat)[(8*i):(8*i+8)]
-        pr += Saddlepoint_approximation(V_diag,(bound)**2 / s1)
+        pr += Saddlepoint_approximation(V_diag,(bound)**2)
     return log2(pr)
 
 def dfr_CNTR_prime_alg_Satterthwaite(n,lm,q,eta1,eta2,q2):
@@ -106,14 +121,14 @@ def dfr_CNTR_prime_alg_Satterthwaite(n,lm,q,eta1,eta2,q2):
     sigma_1 = eta1/2
     sigma_2 = eta2/2
     s1 =  sigma_1 * sigma_2 +  (2*q/q2)**2*sigma_epsilon*sigma_1
-    Mat = covariance_matrix(n)
-    bound = 0.5*q - sqrt(2)*q/q2
+    Mat = covariance_matrix(n, s1, (q/q2)**2*sigma_epsilon)
+    bound = 0.5*q
 
     pr = 0
     for i in range(0,int(lm/4)):
         M = Mat[(8*i):(8*i+8), (8*i):(8*i+8)]
         M_eigen = np.linalg.eigvalsh(M)
-        pr += Satterthwaite_approximation(M_eigen, (bound)**2 / s1)
+        pr += Satterthwaite_approximation(M_eigen, (bound)**2)
     return log2(pr)
 
 def dfr_CNTR_prime_alg_Saddlepoint(n,lm,q,eta1,eta2,q2):
@@ -121,14 +136,14 @@ def dfr_CNTR_prime_alg_Saddlepoint(n,lm,q,eta1,eta2,q2):
     sigma_1 = eta1/2
     sigma_2 = eta2/2
     s1 =  sigma_1 * sigma_2 +  (2*q/q2)**2*sigma_epsilon*sigma_1
-    Mat = covariance_matrix(n)
-    bound = 0.5*q - sqrt(2)*q/q2
+    Mat = covariance_matrix(n, s1, (q/q2)**2*sigma_epsilon)
+    bound = 0.5*q
 
     pr = 0
     for i in range(0,int(lm/4)):
         M = Mat[(8*i):(8*i+8), (8*i):(8*i+8)]
         M_eigen = np.linalg.eigvalsh(M)
-        pr += Saddlepoint_approximation(M_eigen,(bound)**2 / s1)
+        pr += Saddlepoint_approximation(M_eigen,(bound)**2)
     return log2(pr)
 
 
@@ -150,6 +165,7 @@ if __name__ == "__main__":
         PRINT_DFR_RESULT(names[i], "alg_Sad", dfr_CNTR_prime_alg_Saddlepoint(n[i],lm[i],q[i],eta1[i],eta2[i],q2[i]))
 
 '''
+old result: bound = 0.5*q - sqrt(2)*q/q2
 --------------------------------------------------------------
 name                 method          log2(DFR)
 --------------------------------------------------------------
@@ -159,4 +175,15 @@ CNTR-Prime-761       noalg_Sad       -300.16
 CNTR-Prime-761       alg_Sad         -162.62
 CNTR-Prime-1277      noalg_Sad       -187.91
 CNTR-Prime-1277      alg_Sad         -103.03
+
+new result: bound = 0.5*q
+--------------------------------------------------------------
+name                 method          log2(DFR)
+--------------------------------------------------------------
+CNTR-Prime-653       noalg_Sad       -591.72
+CNTR-Prime-653       alg_Sad         -315.35
+CNTR-Prime-761       noalg_Sad       -301.89
+CNTR-Prime-761       alg_Sad         -163.54
+CNTR-Prime-1277      noalg_Sad       -189.04
+CNTR-Prime-1277      alg_Sad         -103.63
 '''
